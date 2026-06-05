@@ -1,0 +1,239 @@
+#usda 1.0
+(
+    defaultPrim = "Sunray150WithMid360V2"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Sunray150WithMid360V2" (
+    apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+    kind = "component"
+)
+{
+    def Xform "_mid360_visual_source" (
+        prepend references = @../sunray150_with_mid360/configuration/sunray150_with_mid360_base.usda@</sunray150_with_mid360>
+    )
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "body" (
+        apiSchemas = ["PhysicsMassAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.0085, 0.0085, 0.012)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 1
+        bool physics:rigidBodyEnabled = 1
+        float physxRigidBody:angularDamping = 0
+        float physxRigidBody:maxAngularVelocity = 10000
+        float physxRigidBody:maxContactImpulse = 0.1
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "body_collision" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+        )
+        {
+            bool physics:collisionEnabled = 1
+            double size = 1
+            token visibility = "invisible"
+            double3 xformOp:scale = (0.2, 0.15, 0.06)
+            double3 xformOp:translate = (0, 0, -0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Xform "body_visual" (
+            prepend references = </Sunray150WithMid360V2/_mid360_visual_source/base_link/visuals/visual_0>
+        )
+        {
+        }
+
+        def Camera "camera"
+        {
+            float3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "rotor0" (
+        apiSchemas = ["PhysicsMassAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (9.75e-7, 0.000173104, 0.000174004)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 0.005
+        bool physics:rigidBodyEnabled = 1
+        float physxRigidBody:angularDamping = 0
+        float physxRigidBody:maxAngularVelocity = 10000
+        float physxRigidBody:maxContactImpulse = 0.1
+        float3 xformOp:translate = (0.065, -0.065, -0.025)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "rotor0_collision" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+        )
+        {
+            bool physics:collisionEnabled = 1
+            token visibility = "invisible"
+            double height = 0.005
+            double radius = 0.05
+        }
+
+        def Xform "rotor0_visual" (
+            prepend references = </Sunray150WithMid360V2/_mid360_visual_source/base_link/rotor_0/visuals/visual_0>
+        )
+        {
+        }
+
+        def PhysicsRevoluteJoint "joint0"
+        {
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </Sunray150WithMid360V2/body>
+            rel physics:body1 = </Sunray150WithMid360V2/rotor0>
+            float physics:breakForce = inf
+            float physics:breakTorque = inf
+            point3f physics:localPos0 = (0.065, -0.065, -0.025)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+
+    def Xform "rotor1" (
+        apiSchemas = ["PhysicsMassAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (9.75e-7, 0.000173104, 0.000174004)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 0.005
+        bool physics:rigidBodyEnabled = 1
+        float physxRigidBody:angularDamping = 0
+        float physxRigidBody:maxAngularVelocity = 10000
+        float physxRigidBody:maxContactImpulse = 0.1
+        float3 xformOp:translate = (-0.065, 0.065, -0.025)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "rotor1_collision" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+        )
+        {
+            bool physics:collisionEnabled = 1
+            token visibility = "invisible"
+            double height = 0.005
+            double radius = 0.05
+        }
+
+        def Xform "rotor1_visual" (
+            prepend references = </Sunray150WithMid360V2/_mid360_visual_source/base_link/rotor_1/visuals/visual_0>
+        )
+        {
+        }
+
+        def PhysicsRevoluteJoint "joint1"
+        {
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </Sunray150WithMid360V2/body>
+            rel physics:body1 = </Sunray150WithMid360V2/rotor1>
+            float physics:breakForce = inf
+            float physics:breakTorque = inf
+            point3f physics:localPos0 = (-0.065, 0.065, -0.025)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+
+    def Xform "rotor2" (
+        apiSchemas = ["PhysicsMassAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (9.75e-7, 0.000173104, 0.000174004)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 0.005
+        bool physics:rigidBodyEnabled = 1
+        float physxRigidBody:angularDamping = 0
+        float physxRigidBody:maxAngularVelocity = 10000
+        float physxRigidBody:maxContactImpulse = 0.1
+        float3 xformOp:translate = (0.065, 0.065, -0.025)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "rotor2_collision" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+        )
+        {
+            bool physics:collisionEnabled = 1
+            token visibility = "invisible"
+            double height = 0.005
+            double radius = 0.05
+        }
+
+        def Xform "rotor2_visual" (
+            prepend references = </Sunray150WithMid360V2/_mid360_visual_source/base_link/rotor_2/visuals/visual_0>
+        )
+        {
+        }
+
+        def PhysicsRevoluteJoint "joint2"
+        {
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </Sunray150WithMid360V2/body>
+            rel physics:body1 = </Sunray150WithMid360V2/rotor2>
+            float physics:breakForce = inf
+            float physics:breakTorque = inf
+            point3f physics:localPos0 = (0.065, 0.065, -0.025)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+
+    def Xform "rotor3" (
+        apiSchemas = ["PhysicsMassAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (9.75e-7, 0.000173104, 0.000174004)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 0.005
+        bool physics:rigidBodyEnabled = 1
+        float physxRigidBody:angularDamping = 0
+        float physxRigidBody:maxAngularVelocity = 10000
+        float physxRigidBody:maxContactImpulse = 0.1
+        float3 xformOp:translate = (-0.065, -0.065, -0.025)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "rotor3_collision" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+        )
+        {
+            bool physics:collisionEnabled = 1
+            token visibility = "invisible"
+            double height = 0.005
+            double radius = 0.05
+        }
+
+        def Xform "rotor3_visual" (
+            prepend references = </Sunray150WithMid360V2/_mid360_visual_source/base_link/rotor_3/visuals/visual_0>
+        )
+        {
+        }
+
+        def PhysicsRevoluteJoint "joint3"
+        {
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </Sunray150WithMid360V2/body>
+            rel physics:body1 = </Sunray150WithMid360V2/rotor3>
+            float physics:breakForce = inf
+            float physics:breakTorque = inf
+            point3f physics:localPos0 = (-0.065, -0.065, -0.025)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+}
