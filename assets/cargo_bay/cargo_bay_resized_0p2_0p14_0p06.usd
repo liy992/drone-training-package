@@ -1,0 +1,360 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+    framesPerSecond = 60
+    timeCodesPerSecond = 60
+)
+
+def Xform "World"
+{
+    def PhysicsScene "physicsScene"
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+    }
+
+    def Xform "transparent_cargo_bay"
+    {
+        def Scope "Looks"
+        {
+            def Material "transparent_blue"
+            {
+                token outputs:surface.connect = </World/transparent_cargo_bay/Looks/transparent_blue/PreviewSurface.outputs:surface>
+                def Shader "PreviewSurface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.4, 0.8, 1.0)
+                    float inputs:opacity = 0.3
+                    float inputs:roughness = 0.15
+                    float inputs:metallic = 0
+                    int inputs:useSpecularWorkflow = 0
+                    token outputs:surface
+                }
+            }
+            def Material "dark_frame"
+            {
+                token outputs:surface.connect = </World/transparent_cargo_bay/Looks/dark_frame/PreviewSurface.outputs:surface>
+                def Shader "PreviewSurface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.02, 0.025, 0.03)
+                    float inputs:opacity = 1.0
+                    float inputs:roughness = 0.45
+                    float inputs:metallic = 0
+                    int inputs:useSpecularWorkflow = 0
+                    token outputs:surface
+                }
+            }
+        }
+
+        def Xform "cargo_body" (prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"])
+        {
+            bool physics:rigidBodyEnabled = true
+            float physics:mass = 0.35
+            vector3f physics:diagonalInertia = (0.0004, 0.00015, 0.00045)
+            point3f physics:centerOfMass = (0, 0, 0)
+            quatf physics:principalAxes = (1, 0, 0, 0)
+            def Xform "frame"
+            {
+                def Cube "x_edge_bottom_leftY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0, 0.0685, 0.0015)
+                    double3 xformOp:scale = (0.2, 0.003, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "x_edge_bottom_rightY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0, -0.0685, 0.0015)
+                    double3 xformOp:scale = (0.2, 0.003, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "y_edge_bottom_frontX" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0.0985, 0, 0.0015)
+                    double3 xformOp:scale = (0.003, 0.14, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "y_edge_bottom_backX" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (-0.0985, 0, 0.0015)
+                    double3 xformOp:scale = (0.003, 0.14, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "x_edge_top_leftY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0, 0.0685, 0.058499999999999996)
+                    double3 xformOp:scale = (0.2, 0.003, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "x_edge_top_rightY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0, -0.0685, 0.058499999999999996)
+                    double3 xformOp:scale = (0.2, 0.003, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "y_edge_top_frontX" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0.0985, 0, 0.058499999999999996)
+                    double3 xformOp:scale = (0.003, 0.14, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "y_edge_top_backX" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (-0.0985, 0, 0.058499999999999996)
+                    double3 xformOp:scale = (0.003, 0.14, 0.003)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "z_edge_frontX_leftY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0.0985, 0.0685, 0.03)
+                    double3 xformOp:scale = (0.003, 0.003, 0.06)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "z_edge_frontX_rightY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (0.0985, -0.0685, 0.03)
+                    double3 xformOp:scale = (0.003, 0.003, 0.06)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "z_edge_backX_leftY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (-0.0985, 0.0685, 0.03)
+                    double3 xformOp:scale = (0.003, 0.003, 0.06)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "z_edge_backX_rightY" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                    double3 xformOp:translate = (-0.0985, -0.0685, 0.03)
+                    double3 xformOp:scale = (0.003, 0.003, 0.06)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+            }
+            def Xform "fixed_transparent_panels"
+            {
+                def Cube "top_panel" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    bool physics:collisionEnabled = true
+                    rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                    color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                    float[] primvars:displayOpacity = [0.3]
+                    double3 xformOp:translate = (0, 0, 0.059)
+                    double3 xformOp:scale = (0.2, 0.14, 0.002)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "front_panel_x_positive" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    bool physics:collisionEnabled = true
+                    rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                    color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                    float[] primvars:displayOpacity = [0.3]
+                    double3 xformOp:translate = (0.099, 0, 0.03)
+                    double3 xformOp:scale = (0.002, 0.14, 0.054)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "back_panel_x_negative" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    bool physics:collisionEnabled = true
+                    rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                    color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                    float[] primvars:displayOpacity = [0.3]
+                    double3 xformOp:translate = (-0.099, 0, 0.03)
+                    double3 xformOp:scale = (0.002, 0.14, 0.054)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+                def Cube "right_panel_y_negative" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+                {
+                    double size = 1
+                    bool physics:collisionEnabled = true
+                    rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                    color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                    float[] primvars:displayOpacity = [0.3]
+                    double3 xformOp:translate = (0, -0.069, 0.03)
+                    double3 xformOp:scale = (0.2, 0.002, 0.054)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+            }
+            def Cylinder "visual_left_door_hinge_barrel"
+            {
+                uniform token axis = "X"
+                double radius = 0.002
+                double height = 0.19
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0, 0.071, 0.06)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def Cylinder "visual_bottom_door_hinge_barrel"
+            {
+                uniform token axis = "X"
+                double radius = 0.002
+                double height = 0.19
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0, -0.071, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "left_door" (prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"])
+        {
+            bool physics:rigidBodyEnabled = true
+            bool physics:kinematicEnabled = false
+            float physics:mass = 0.045
+            vector3f physics:diagonalInertia = (0.000011, 0.00004, 0.00004)
+            double3 xformOp:translate = (0, 0.07, 0.06)
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            def Cube "transparent_panel_collision" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+            {
+                double size = 1
+                rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                float[] primvars:displayOpacity = [0.3]
+                double3 xformOp:translate = (0, 0, -0.027)
+                double3 xformOp:scale = (0.2, 0.002, 0.054)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+            def Cube "handle" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+            {
+                double size = 1
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0.032, 0.0015, -0.04)
+                double3 xformOp:scale = (0.018, 0.004, 0.004)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+            def Cylinder "visual_hinge_pin"
+            {
+                uniform token axis = "X"
+                double radius = 0.0014
+                double height = 0.19
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "bottom_door" (prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"])
+        {
+            bool physics:rigidBodyEnabled = true
+            bool physics:kinematicEnabled = false
+            float physics:mass = 0.05
+            vector3f physics:diagonalInertia = (0.000012, 0.00005, 0.00005)
+            double3 xformOp:translate = (0, -0.07, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            def Cube "transparent_panel_collision" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+            {
+                double size = 1
+                rel material:binding = </World/transparent_cargo_bay/Looks/transparent_blue>
+                color3f[] primvars:displayColor = [(0.4, 0.8, 1.0)]
+                float[] primvars:displayOpacity = [0.3]
+                double3 xformOp:translate = (0, 0.07, 0)
+                double3 xformOp:scale = (0.2, 0.14, 0.002)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+            def Cube "handle_or_limit_block" (prepend apiSchemas = ["PhysicsCollisionAPI"])
+            {
+                double size = 1
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0.03, 0.133, -0.003)
+                double3 xformOp:scale = (0.02, 0.004, 0.004)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+            def Cylinder "visual_hinge_pin"
+            {
+                uniform token axis = "X"
+                double radius = 0.0014
+                double height = 0.19
+                rel material:binding = </World/transparent_cargo_bay/Looks/dark_frame>
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Scope "joints"
+        {
+            def PhysicsRevoluteJoint "left_door_hinge_joint" (prepend apiSchemas = ["PhysicsDriveAPI:angular"])
+            {
+                rel physics:body0 = </World/transparent_cargo_bay/cargo_body>
+                rel physics:body1 = </World/transparent_cargo_bay/left_door>
+                uniform token physics:axis = "X"
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 90
+                point3f physics:localPos0 = (0, 0.07, 0.06)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                token drive:angular:physics:type = "force"
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                float drive:angular:physics:stiffness = 1.5
+                float drive:angular:physics:damping = 0.1
+                float drive:angular:physics:maxForce = 5
+            }
+            def PhysicsRevoluteJoint "bottom_door_hinge_joint" (prepend apiSchemas = ["PhysicsDriveAPI:angular"])
+            {
+                rel physics:body0 = </World/transparent_cargo_bay/cargo_body>
+                rel physics:body1 = </World/transparent_cargo_bay/bottom_door>
+                uniform token physics:axis = "X"
+                float physics:lowerLimit = -90
+                float physics:upperLimit = 0
+                point3f physics:localPos0 = (0, -0.07, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                token drive:angular:physics:type = "force"
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                float drive:angular:physics:stiffness = 1.5
+                float drive:angular:physics:damping = 0.1
+                float drive:angular:physics:maxForce = 5
+            }
+        }
+    }
+    def Camera "Camera"
+    {
+        double3 xformOp:translate = (0.17, -0.145, 0.105)
+        double3 xformOp:rotateXYZ = (60, 0, 47)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+        float focalLength = 45
+        float focusDistance = 0.2
+        float2 clippingRange = (0.001, 10)
+    }
+    def DistantLight "Sun_Key_Light"
+    {
+        float intensity = 650
+        double3 xformOp:rotateXYZ = (-45, 0, 35)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+    def DomeLight "Soft_Fill_Light"
+    {
+        float intensity = 120
+    }
+}

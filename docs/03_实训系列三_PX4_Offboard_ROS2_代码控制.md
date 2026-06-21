@@ -1,6 +1,6 @@
 # 模块三：PX4 Offboard 与 ROS 2 代码控制
 
-学习目标：
+说明目标：
 
 - 理解 PX4 local / NED 坐标系。
 - 理解 ENU / NED、FLU / FRD 的区别。
@@ -10,7 +10,8 @@
 前置条件：
 
 - 官方 Iris 已经能通过 QGC 手动飞行。
-- Ubuntu 20.04 + ROS 2 Foxy 环境、`px4_msgs`、Micro XRCE-DDS Agent 安装完成。
+- Ubuntu 20.04 + Foxy、Ubuntu 22.04 + Humble 或 Ubuntu 24.04 + Jazzy 环境中的 `px4_msgs`、Micro XRCE-DDS Agent 已安装完成。
+- 验证环境使用 Ubuntu 24.04.4 + ROS 2 Jazzy。
 - 能检索到 `/fmu/out/*` 状态话题。
 
 
@@ -25,7 +26,7 @@
 | world / map | 固定 | 场景或规划使用的世界坐标 |
 | PX4 local | 固定 | PX4 本地位置控制使用的局部坐标，通常以 home/local origin 为原点 |
 | body | 随无人机移动 | 无人机机身坐标，随姿态变化 |
-| sensor frame | 随传感器移动 | 例如相机或其它传感器自己的坐标系 |
+| sensor frame | 随传感器移动 | 例如相机或其它传感器自身的坐标系 |
 
 PX4 local 通常按 NED 理解：
 
@@ -126,14 +127,38 @@ ROS 2 控制 PX4 的基本流程如下：
 
 | 文件 | 作用 |
 | --- | --- |
-| `run_import_asset.sh` | 用 Isaac Sim 执行导入脚本，加载比赛无人机资产，并启动 Pegasus PX4 backend |
+| `run_import_asset.sh` | 用 Isaac Sim 执行导入脚本，加载目标无人机资产，并启动 Pegasus PX4 backend |
 | `isaac/import_sunray150_with_px4.py` | Isaac Sim `--exec` 脚本，调用 Pegasus `Multirotor` 加载无人机 |
 | `run_control_menu.sh` | 启动 ROS 2/PX4 命令行控制菜单 |
 | `control/px4_offboard_menu.py` | 发布 `/fmu/in/*` Offboard 控制话题，订阅 `/fmu/out/*` 状态话题 |
 
-使用前先确认 PX4 话题可见：
+使用前先确认 PX4 话题可见。每个新终端都要 source 对应系统的 ROS 2 环境和 `px4_msgs` 工作空间。
+
+Ubuntu 20.04 + Foxy：
 
 ```bash
+source /opt/ros/foxy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+ros2 topic list --no-daemon | grep /fmu
+ros2 topic echo /fmu/out/vehicle_local_position --once
+ros2 topic echo /fmu/out/vehicle_local_position_v1 --once
+```
+
+Ubuntu 22.04 + Humble：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+ros2 topic list --no-daemon | grep /fmu
+ros2 topic echo /fmu/out/vehicle_local_position --once
+ros2 topic echo /fmu/out/vehicle_local_position_v1 --once
+```
+
+Ubuntu 24.04 + Jazzy：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
 ros2 topic list --no-daemon | grep /fmu
 ros2 topic echo /fmu/out/vehicle_local_position --once
 ros2 topic echo /fmu/out/vehicle_local_position_v1 --once
@@ -148,13 +173,13 @@ cd /home/robot-a/Desktop/drone_training_github_release
 ./run_import_asset.sh
 ```
 
-如果只是检查 USD 资产能不能加载，不想启动 PX4，可以用：
+仅检查 USD 资产是否可加载且不启动 PX4 时，可使用：
 
 ```bash
 ./run_import_asset.sh --no-px4-autolaunch
 ```
 
-常用参数：
+参数示例：
 
 ```bash
 ./run_import_asset.sh --x 0 --y 0 --z 1.0
@@ -180,13 +205,13 @@ land
 quit
 ```
 
-想快速验证控制链路，可以输入：
+如需简化验证控制链路，可输入：
 
 ```text
 demo
 ```
 
-`demo` 会自动执行：起飞 1m，等待进入 Offboard，然后把 PX4 local x 目标增加 1m。
+`demo` 会自动执行：起飞 1m，等待进入 Offboard，然后按世界坐标 / ENU 的 x 正方向移动 1m。
 
 菜单命令说明：
 
@@ -195,30 +220,61 @@ demo
 | `status` | 显示 PX4 local position、当前目标点、解锁状态和飞行模式 |
 | `takeoff 1.0` | 以当前位置为基准，上升约 1m，并切入 Offboard、发送 arm |
 | `offboard` | 如果无人机已经通过 QGC 起飞，先保持当前位置并切入 Offboard |
-| `move 1 0 0` | 在当前目标点基础上，PX4 local x 增加 1m |
+| `move 1 0 0` | 在当前目标点基础上，沿世界坐标 / ENU 的 x 正方向移动 1m |
 | `goto 0 0 -1.2` | 直接设置 PX4 local/NED 目标点 |
 | `hover` | 把当前位置设为目标点并保持 |
 | `land` | 发送 PX4 land 命令 |
 
-注意：`move` 不是起飞命令。它只在 PX4 已经处于 `OFFBOARD` 模式后改变目标点。如果 PX4 仍在 `AUTO_LOITER`、`POSCTL`、`MANUAL` 等模式，脚本会提示先运行 `takeoff` 或 `offboard`。
+需注意：`move` 不是起飞命令。它只在 PX4 已经处于 `OFFBOARD` 模式后改变目标点。如果 PX4 仍在 `AUTO_LOITER`、`POSCTL`、`MANUAL` 等模式，脚本会提示先运行 `takeoff` 或 `offboard`。
 
-控制菜单使用 PX4 local/NED 坐标：
+`move` 命令使用世界坐标 / ENU 相对位移：
 
 ```text
-x = North
-y = East
-z = Down
+move x = 世界坐标 x 正方向
+move y = 世界坐标 y 正方向
+move z = 向上
 ```
 
-所以上升是 `z` 变小。比如：
+脚本内部会转换为 PX4 local / NED：
+
+```text
+px4_dx = world_dy
+px4_dy = world_dx
+px4_dz = -world_dz
+```
+
+所以 `move 1 0 0` 会沿世界坐标 x 正方向移动，发送给 PX4 时等价于 PX4 local y 增加 1m。比如：
 
 ```text
 takeoff 1.0       # 目标 z = current_z - 1.0
-move 0 0 -0.2    # 在当前目标基础上再上升约 0.2m
-move 0 0 0.2     # 在当前目标基础上下降约 0.2m
+move 1 0 0       # 沿世界坐标 x 正方向移动 1m
+move 0 1 0       # 沿世界坐标 y 正方向移动 1m
+move 0 0 0.2     # 在当前目标基础上再上升约 0.2m
+move 0 0 -0.2    # 在当前目标基础上下降约 0.2m
 ```
 
-如果脚本启动时报 Python 版本问题，通常是因为在 conda `(base)` 环境中运行了 ROS 2。`run_control_menu.sh` 默认使用 `/usr/bin/python3`，不应改成 conda 的 `python3`。
+`goto` 仍然使用 PX4 local / NED 绝对目标点。没有 world home/origin 信息时，应避免将 `goto` 改成世界坐标绝对点。
+
+如果脚本启动时报 Python 版本问题，通常是因为在 conda `(base)` 环境中运行了 ROS 2。`run_control_menu.sh` 默认使用 `/usr/bin/python3`；验证环境使用 `/opt/ros/jazzy` 和 `/home/robot-a/ros2_ws`。
+
+Jazzy 对应系统 Python 3.12。`px4_msgs` 必须用系统 Python 编译，例如：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd /home/robot-a/ros2_ws
+/usr/bin/python3 -m colcon build --symlink-install --packages-select px4_msgs
+```
+
+应避免使用 conda Python 3.13 编译 Jazzy 的 `px4_msgs`。如果日志里出现 `libpython3.13.so.1.0` 或 `UnsupportedTypeSupport`，说明当前终端 source 到了 Python 版本不匹配的 `px4_msgs` 工作空间，需要清理终端环境后重新 source 正确工作空间：
+
+```bash
+unset PX4_ROS_WS
+unset PYTHONPATH
+unset AMENT_PREFIX_PATH
+unset CMAKE_PREFIX_PATH
+source /opt/ros/jazzy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+```
 
 ### 06 Python 控制代码讲解
 
@@ -303,23 +359,25 @@ def main():
 - `z` 减小：向上。
 - `z` 增大：向下。
 
-不能把“前进”直接等同于 PX4 local x 增大。前进通常指 body forward，它和世界系/PX4 local 的关系取决于当前 yaw。
+控制菜单里的 `goto` 使用上面的 PX4 local/NED 绝对坐标。`move` 使用世界坐标 / ENU 相对位移，脚本会转换成 PX4 local/NED 后发布。
+
+不应将“前进”直接等同于 PX4 local x 增大。前进通常指 body forward，它和世界系/PX4 local 的关系取决于当前 yaw。
 
 控制菜单示例：
 
 ```text
 status
 takeoff 1.0
-move 1 0 0
-move 0 1 0
-move 0 0 -0.2
+move 1 0 0      # 世界 x 正方向
+move 0 1 0      # 世界 y 正方向
+move 0 0 0.2    # 上升
 hover
 land
 ```
 
 ### 08 Offboard 常见问题排查
 
-Offboard 不起飞一般先查这些：
+Offboard 不起飞时，通常按以下项目检查：
 
 - 没有持续发布 `OffboardControlMode`。
 - 没有持续发布 `TrajectorySetpoint`。

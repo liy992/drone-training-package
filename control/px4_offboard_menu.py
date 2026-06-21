@@ -351,6 +351,12 @@ def parse_xyz(parts: list[str]) -> list[float]:
     return [float(parts[0]), float(parts[1]), float(parts[2])]
 
 
+def world_enu_delta_to_px4_ned_delta(delta: Iterable[float]) -> list[float]:
+    """Convert a relative world/ENU delta to PX4 local/NED delta."""
+    dx, dy, dz = [float(value) for value in delta]
+    return [dy, dx, -dz]
+
+
 def print_help() -> None:
     print(
         """
@@ -358,17 +364,18 @@ Commands:
   status                  Show PX4 local position, vehicle status, and current target.
   takeoff [height]         Take off by relative height in meters. Default: 1.0.
   offboard                 Hold current position and switch PX4 to Offboard.
-  demo                     Take off 1m, move +1m in PX4 local x, then hover.
+  demo                     Take off 1m, move +1m in world x, then hover.
   goto <x> <y> <z>         Set absolute PX4 local/NED target.
-  move <dx> <dy> <dz>      Move relative to current target/current position in PX4 local/NED.
+  move <dx> <dy> <dz>      Move relative in world/ENU coordinates.
   hover                   Hold current PX4 local position.
   land                    Send PX4 land command.
   help                    Show this help.
   quit                    Exit this menu.
 
 Coordinate reminder:
-  PX4 local uses NED: x North, y East, z Down.
-  Up is negative z. Example: takeoff 1.0 sends current_z - 1.0.
+  move uses world/ENU: x world +x, y world +y, z Up.
+  It is converted internally to PX4 local/NED: ned_x=world_y, ned_y=world_x, ned_z=-world_z.
+  takeoff/goto still publish PX4 local/NED targets. Example: takeoff 1.0 sends current_z - 1.0.
 """
     )
 
@@ -449,9 +456,18 @@ def command_loop(node: Px4OffboardMenu) -> None:
                     raise RuntimeError("PX4 did not arm; run 'status' and check QGC")
                 print("Demo: holding takeoff target for 3 seconds...")
                 time.sleep(3.0)
-                move_target = [takeoff_target[0] + 1.0, takeoff_target[1], takeoff_target[2]]
+                world_delta = [1.0, 0.0, 0.0]
+                ned_delta = world_enu_delta_to_px4_ned_delta(world_delta)
+                move_target = [
+                    takeoff_target[0] + ned_delta[0],
+                    takeoff_target[1] + ned_delta[1],
+                    takeoff_target[2] + ned_delta[2],
+                ]
                 node.set_target(move_target, current.heading)
-                print(f"Demo: moved target to PX4 local/NED: {move_target}")
+                print(
+                    "Demo: moved target by world/ENU delta "
+                    f"{world_delta}; PX4 local/NED target: {move_target}"
+                )
             elif command == "goto":
                 node.require_offboard_for_movement()
                 target = parse_xyz(args)
@@ -459,7 +475,8 @@ def command_loop(node: Px4OffboardMenu) -> None:
                 print(f"Target set to PX4 local/NED: {target}")
             elif command == "move":
                 node.require_offboard_for_movement()
-                delta = parse_xyz(args)
+                world_delta = parse_xyz(args)
+                ned_delta = world_enu_delta_to_px4_ned_delta(world_delta)
                 with node.state_lock:
                     base = (
                         list(node.target_position)
@@ -469,9 +486,17 @@ def command_loop(node: Px4OffboardMenu) -> None:
                 if base is None:
                     current = node.current_position()
                     base = [current.x, current.y, current.z]
-                target = [base[0] + delta[0], base[1] + delta[1], base[2] + delta[2]]
+                target = [
+                    base[0] + ned_delta[0],
+                    base[1] + ned_delta[1],
+                    base[2] + ned_delta[2],
+                ]
                 node.set_target(target)
-                print(f"Moved target to PX4 local/NED: {target}")
+                print(
+                    "Moved target by world/ENU delta "
+                    f"{world_delta}; converted PX4 local/NED delta: {ned_delta}; "
+                    f"target: {target}"
+                )
             elif command == "hover":
                 current = node.current_position()
                 node.set_target([current.x, current.y, current.z], current.heading)

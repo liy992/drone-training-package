@@ -1,6 +1,6 @@
 # 模块二：Isaac Sim + Pegasus + PX4 官方 Iris 试飞
 
-学习目标：
+说明目标：
 
 - 安装并启用 Pegasus 插件。
 - 理解 PX4-Autopilot、px4_msgs、Micro XRCE-DDS Agent、QGC 的作用。
@@ -9,12 +9,12 @@
 前置条件：
 
 - 已理解模块一中的基础链路。
-- 操作系统使用 Ubuntu 20.04。
-- ROS 2 使用 Foxy。
+- 操作系统可以是 Ubuntu 20.04、Ubuntu 22.04 或 Ubuntu 24.04。
+- ROS 2 控制终端按系统选择 Foxy、Humble 或 Jazzy。
 - Isaac Sim 能正常启动。
 - 能打开终端执行基础命令。
 
-完成要求：
+验证目标：
 
 - Isaac Sim 中能加载 Iris。
 - Pegasus 能启动 PX4 backend。
@@ -24,37 +24,29 @@
 
 ### 01 Pegasus 插件安装与启用
 
-流程分两步：先把 Pegasus 安装到 Isaac Sim 自己的 Python 环境，再到 Isaac Sim GUI 里添加 extension 路径并启用插件。
+Pegasus 插件安装分为两个步骤：将 Pegasus 安装到 Isaac Sim 使用的 Python 环境，然后在 Isaac Sim GUI 中添加 extension 路径并启用插件。
 
-安装 Pegasus Simulator 源码：
+验证环境中的 Pegasus 源码位置：
 
-```bash
-# 如果在容器里操作，可以参考下面路径
-cd /root
-git clone --branch v4.5.1 --depth 1 https://github.com/PegasusSimulator/PegasusSimulator.git
-cd /root/PegasusSimulator/extensions
-
-# Isaac Sim 插件需要安装到 Isaac Sim 自己的 Python 环境
-export ISAACSIM_PATH=/isaac-sim
-export ISAACSIM_PYTHON=/isaac-sim/python.sh
-
-cd ~/PegasusSimulator/extensions/pegasus.simulator
-/isaac-sim/python.sh -m pip install --editable pegasus.simulator
-```
-
-如果上面命令不生效，换成下面写法：
-
-```bash
-$ISAACSIM_PYTHON -m pip install -e ~/PegasusSimulator/extensions/pegasus.simulator
-```
-
-本机路径可能不同。比如 Pegasus 源码可能在：
-
-```bash
+```text
 /home/robot-a/Documents/PegasusSimulator
 ```
 
-Python 环境是常见错误来源。安装 Pegasus 插件时应使用 Isaac Sim 自带的 Python，不应使用系统 Python 或 conda Python。否则 GUI 里可能找不到插件，或者插件能显示但 import 失败。
+如需复现 Pegasus 安装流程，可使用 Isaac Sim 环境中的 Python：
+
+```bash
+export ISAACSIM_BIN=/home/robot-a/miniconda3/envs/env_isaacsim/bin/isaacsim
+export ISAACSIM_PYTHON=/home/robot-a/miniconda3/envs/env_isaacsim/bin/python
+export PEGASUS_ROOT=/home/robot-a/Documents/PegasusSimulator
+
+cd ${PEGASUS_ROOT}
+git status --short --branch
+
+${ISAACSIM_PYTHON} -c "import sys; print(sys.executable)"
+${ISAACSIM_PYTHON} -m pip install -e ${PEGASUS_ROOT}/extensions/pegasus.simulator
+```
+
+当前项目脚本会通过 `sys.path` 加入 `/home/robot-a/Documents/PegasusSimulator/extensions/pegasus.simulator`，因此脚本加载目标无人机时可以直接找到 Pegasus Python 包。
 
 安装完成后，启动 Isaac Sim GUI。在菜单栏进入：
 
@@ -68,12 +60,11 @@ Window -> Extensions
 
 ![Extensions 设置界面](ph/微信图片_20260607153722.png)
 
-点击路径列表旁边的加号，添加 Pegasus 源码里的 `extensions` 目录。注意添加的是 `extensions` 目录，不是里面的 `pegasus.simulator` 子目录。
+点击路径列表旁边的加号，添加 Pegasus 源码里的 `extensions` 目录。需注意，添加对象是 `extensions` 目录，不是其中的 `pegasus.simulator` 子目录。
 
 常见路径：
 
 ```bash
-/root/PegasusSimulator/extensions
 /home/robot-a/Documents/PegasusSimulator/extensions
 ```
 
@@ -83,17 +74,42 @@ Window -> Extensions
 
 ![搜索并安装 Pegasus 插件](ph/微信图片_202606071537201.png)
 
-选择和当前 Isaac Sim 匹配的插件版本。Isaac Sim 4.5 对应 4.5.0；其他版本按实际情况选。安装后勾选 `Enabled`。
+选择和 Isaac Sim 版本匹配的插件版本。验证环境使用本地 `/home/robot-a/Documents/PegasusSimulator`，添加路径后勾选 `Enabled`。
 
 
 
 ### 02 PX4-Autopilot、px4_msgs、Micro XRCE-DDS Agent、QGC 的作用
 
-这一节安装无人机控制需要的依赖。下面命令以 Ubuntu 20.04 + ROS 2 Foxy 为准。Ubuntu 24.04 和 26.04 可以参考思路，但 ROS 2 发行版、Python 版本和 apt 源都可能不同，不能直接照抄。
+本节说明验证环境中已安装的软件包，并给出在单独目录中重新下载和编译的复现流程。复现安装流程时，应避免移动或删除现有可用目录。
 
-Foxy 已经停止官方维护。本文档仍然使用 Foxy，是为了和 Ubuntu 20.04、PX4 v1.14.x 以及现有控制代码保持一致。
+验证环境关键路径：
 
-先装基础工具：
+```text
+PX4-Autopilot: /home/robot-a/PX4-Autopilot
+px4_msgs: /home/robot-a/ros2_ws/src/px4_msgs
+Micro XRCE-DDS Agent: /home/robot-a/px4_agent_ws/src/Micro-XRCE-DDS-Agent
+Micro XRCE-DDS Agent binary: /home/robot-a/px4_agent_ws/install/microxrcedds_agent/bin/MicroXRCEAgent
+QGroundControl: /home/robot-a/Downloads/QGroundControl.AppImage
+```
+
+系统版本和 ROS 2 版本按下表对应：
+
+| Ubuntu | ROS 2 | source 命令 |
+| --- | --- | --- |
+| 20.04 | Foxy | `source /opt/ros/foxy/setup.bash` |
+| 22.04 | Humble | `source /opt/ros/humble/setup.bash` |
+| 24.04 | Jazzy | `source /opt/ros/jazzy/setup.bash` |
+
+验证环境为 Ubuntu 24.04.4，宿主机 ROS 2 控制终端使用 Jazzy：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+```
+
+需注意：`/home/robot-a/run_isaacsim.sh` 内部会为 Isaac Sim ROS 2 Bridge 设置 `ROS_DISTRO=humble` 和 `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`。这属于 Isaac Sim 启动环境，不等同于控制终端需要 source Humble。
+
+安装基础工具：
 
 ```bash
 sudo apt update
@@ -112,21 +128,30 @@ sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 ```
 
-安装 ROS 2 Foxy：
+确认对应 ROS 2 发行版已安装：
+
+Ubuntu 20.04 + Foxy：
 
 ```bash
-sudo add-apt-repository universe
-sudo apt update
-sudo apt install -y curl gnupg2 lsb-release
+ls /opt/ros
+source /opt/ros/foxy/setup.bash
+ros2 --version
+```
 
-sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc \
-  -o /usr/share/keyrings/ros-archive-keyring.gpg
+Ubuntu 22.04 + Humble：
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
-  | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+```bash
+ls /opt/ros
+source /opt/ros/humble/setup.bash
+ros2 --version
+```
 
-sudo apt update
-sudo apt install -y ros-foxy-desktop python3-colcon-common-extensions python3-rosdep
+Ubuntu 24.04 + Jazzy：
+
+```bash
+ls /opt/ros
+source /opt/ros/jazzy/setup.bash
+ros2 --version
 ```
 
 初始化 `rosdep`：
@@ -136,10 +161,27 @@ sudo rosdep init
 rosdep update
 ```
 
-每个新终端都需要 source ROS 2：
+每个新的 ROS 2 控制终端均需要 source：
+
+Ubuntu 20.04 + Foxy：
 
 ```bash
 source /opt/ros/foxy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+```
+
+Ubuntu 22.04 + Humble：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+```
+
+Ubuntu 24.04 + Jazzy：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
 ```
 
 PX4-Autopilot 是飞控代码仓库。仿真时运行的是 PX4 SITL。Pegasus 通过 PX4 MAVLink backend 启动或连接它。
@@ -151,38 +193,41 @@ PX4-Autopilot 负责这些飞控逻辑：
 - 接收 QGC 或 ROS 2 的目标。
 - 输出执行器控制。
 
-常见位置：
+验证环境位置：
 
 ```bash
-/root/PX4-Autopilot
+/home/robot-a/PX4-Autopilot
 ```
 
-Ubuntu 20.04 下可以这样下载和编译 PX4 v1.14：
+验证已有安装时执行：
 
 ```bash
-cd ~
-git clone --branch v1.14.3 --recursive https://github.com/PX4/PX4-Autopilot.git
+cd /home/robot-a/PX4-Autopilot
+git describe --tags --always --dirty
+make px4_sitl_default
+```
+
+如需重新下载并编译，安装目录可自行选择：
+
+```bash
+mkdir -p /home/robot-a/px4_install_demo
+cd /home/robot-a/px4_install_demo
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive
 cd PX4-Autopilot
 bash ./Tools/setup/ubuntu.sh
-```
-
-执行完依赖脚本后，重新打开终端，检查 SITL 是否能编译：
-
-```bash
-cd ~/PX4-Autopilot
-make px4_sitl_default none
+make px4_sitl_default
 ```
 
 如果 Pegasus 要自动启动 PX4，Pegasus UI 里的 PX4 路径应指向这个目录：
 
 ```text
-/home/<用户名>/PX4-Autopilot
+/home/robot-a/PX4-Autopilot
 ```
 
 版本要对齐：
 
 - Pegasus、PX4、`px4_msgs` 要匹配。
-- 本培训包按 PX4 v1.14.x 编写。
+- 验证环境的 PX4 仓库为 `/home/robot-a/PX4-Autopilot`，当前描述版本类似 `v1.17.0-alpha1-1219-g30bbd6ecd4`。
 - `px4_msgs` 和 PX4 版本不一致时，ROS 2 topic 可能出现，但消息字段会对不上。
 
 `px4_msgs` 是 PX4 和 ROS 2 通信用的消息定义包。ROS 2 节点要发布 `OffboardControlMode`、`TrajectorySetpoint`、`VehicleCommand`，就需要它。
@@ -193,27 +238,80 @@ make px4_sitl_default none
 - 让 ROS 2 节点能编译和运行 PX4 控制代码。
 - 保持 ROS 2 消息和 PX4 uORB 消息对应。
 
-常见位置：
+验证环境位置：
 
 ```bash
-/root/px4_ros_ws/src/px4_msgs
 /home/robot-a/ros2_ws/src/px4_msgs
 ```
 
-`px4_msgs` 应与 PX4 版本匹配。PX4 v1.14.x 通常使用 `release/1.14` 分支：
+验证已有安装时执行：
+
+Ubuntu 20.04 + Foxy：
 
 ```bash
 source /opt/ros/foxy/setup.bash
-
-mkdir -p ~/px4_ros_ws/src
-cd ~/px4_ros_ws/src
-git clone --branch release/1.14 https://github.com/PX4/px4_msgs.git
-
-cd ~/px4_ros_ws
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
-source ~/px4_ros_ws/install/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+ros2 interface show px4_msgs/msg/TrajectorySetpoint
 ```
+
+Ubuntu 22.04 + Humble：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+ros2 interface show px4_msgs/msg/TrajectorySetpoint
+```
+
+Ubuntu 24.04 + Jazzy：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/robot-a/ros2_ws/install/setup.bash
+ros2 interface show px4_msgs/msg/TrajectorySetpoint
+```
+
+如需在重新下载和编译`px4_msgs` ，流程如下：
+
+Ubuntu 20.04 + Foxy：
+
+```bash
+mkdir -p /home/robot-a/px4_install_demo/ros2_ws/src
+cd /home/robot-a/px4_install_demo/ros2_ws/src
+git clone https://github.com/PX4/px4_msgs.git
+
+cd /home/robot-a/px4_install_demo/ros2_ws
+source /opt/ros/foxy/setup.bash
+/usr/bin/python3 -m colcon build --symlink-install --packages-select px4_msgs
+source install/setup.bash
+```
+
+Ubuntu 22.04 + Humble：
+
+```bash
+mkdir -p /home/robot-a/px4_install_demo/ros2_ws/src
+cd /home/robot-a/px4_install_demo/ros2_ws/src
+git clone https://github.com/PX4/px4_msgs.git
+
+cd /home/robot-a/px4_install_demo/ros2_ws
+source /opt/ros/humble/setup.bash
+/usr/bin/python3 -m colcon build --symlink-install --packages-select px4_msgs
+source install/setup.bash
+```
+
+Ubuntu 24.04 + Jazzy：
+
+```bash
+mkdir -p /home/robot-a/px4_install_demo/ros2_ws/src
+cd /home/robot-a/px4_install_demo/ros2_ws/src
+git clone https://github.com/PX4/px4_msgs.git
+
+cd /home/robot-a/px4_install_demo/ros2_ws
+source /opt/ros/jazzy/setup.bash
+/usr/bin/python3 -m colcon build --symlink-install --packages-select px4_msgs
+source install/setup.bash
+```
+
+Jazzy 对应系统 Python 3.12。应避免使用 conda Python 3.13 编译 `px4_msgs`，否则运行控制脚本时可能出现 `libpython3.13.so.1.0` 或 `UnsupportedTypeSupport` 相关错误。这个部分需要注意自身的python版本的问题。
 
 检查消息是否可用：
 
@@ -225,7 +323,7 @@ ros2 interface show px4_msgs/msg/VehicleCommand
 
 Micro XRCE-DDS Agent 是 PX4 和 ROS 2 DDS 网络之间的桥。
 
-没有 Agent 时，常见现象是：
+缺少 Agent 时，常见现象包括：
 
 - PX4 侧 uXRCE-DDS Client 发出的数据到不了 ROS 2。
 - ROS 2 发给 `/fmu/in/*` 的数据到不了 PX4。
@@ -234,15 +332,23 @@ Micro XRCE-DDS Agent 是 PX4 和 ROS 2 DDS 网络之间的桥。
 常见启动形式：
 
 ```bash
+source /home/robot-a/px4_agent_ws/install/setup.bash
 MicroXRCEAgent udp4 -p 8888
 ```
 
-端口和启动方式以当前 PX4 / Pegasus 配置为准。
+如果没有 source 到 PATH，也可以直接使用绝对路径：
+
+```bash
+/home/robot-a/px4_agent_ws/install/microxrcedds_agent/bin/MicroXRCEAgent udp4 -p 8888
+```
+
+端口和启动方式以实际 PX4 / Pegasus 配置为准。常用端口是 `8888`。
 
 如果系统里没有 `MicroXRCEAgent`，可以从源码编译：
 
 ```bash
-cd ~
+mkdir -p /home/robot-a/px4_install_demo/px4_agent_ws/src
+cd /home/robot-a/px4_install_demo/px4_agent_ws/src
 git clone --branch v2.4.3 https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
 cd Micro-XRCE-DDS-Agent
 mkdir -p build
@@ -260,35 +366,56 @@ MicroXRCEAgent --help
 MicroXRCEAgent udp4 -p 8888
 ```
 
-QGC 是地面站。它不是 ROS 2 控制的必需条件，但调试时建议打开。
+QGC 是地面站。它不是 ROS 2 控制的必需条件，但调试时可保持打开。
 
-它可以帮你确认这些状态：
+它可用于确认以下状态：
 
-- PX4 有没有连接。
+- PX4 是否连接。
 - 是否 Ready To Fly。
 - 当前模式、告警、参数是否正常。
-- 虚拟摇杆或手柄能不能控制飞行。
-- PX4 为什么不让飞机 arm 或起飞。
+- 虚拟摇杆或手柄是否可以控制飞行。
+- PX4 拒绝 arm 或起飞的原因。
 
 部分飞控问题在终端中不够直观，QGC 通常可以直接显示原因。
 
-Ubuntu 20.04 下可以使用 QGroundControl AppImage：
+通用下载方式以 QGroundControl 官方下载页为准：
+
+```text
+https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html
+```
+
+进入该页面后，选择 Linux 版本的 AppImage，下载到系统后赋予执行权限：
 
 ```bash
 cd ~/Downloads
-wget -O QGroundControl.AppImage https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl.AppImage
-chmod +x QGroundControl.AppImage
-./QGroundControl.AppImage
+chmod +x QGroundControl*.AppImage
+./QGroundControl*.AppImage
 ```
 
-如果 AppImage 报 `FUSE` 相关错误，先安装：
+验证环境已有 QGroundControl AppImage 时，也可以直接使用示例路径：
+
+```bash
+chmod +x /home/robot-a/Downloads/QGroundControl.AppImage
+/home/robot-a/Downloads/QGroundControl.AppImage
+```
+
+如果 AppImage 报 `FUSE` 相关错误，按系统安装兼容包。
+
+Ubuntu 20.04 / Ubuntu 22.04：
 
 ```bash
 sudo apt update
 sudo apt install -y libfuse2
 ```
 
-如果最新 AppImage 在 Ubuntu 20.04 上启动失败，可以去 QGroundControl 的历史版本页面下载 4.3.x 或 4.4.x AppImage。培训只要求 QGC 能连接 PX4、显示状态并进行手动控制，不强制使用最新版。
+Ubuntu 24.04：
+
+```bash
+sudo apt update
+sudo apt install -y libfuse2t64
+```
+
+本流程要求 QGC 能连接 PX4、显示状态并进行手动控制，不强制使用最新版。
 
 Isaac Sim ROS 2 Bridge 需要在安装 Isaac Sim 时就安装好。它负责把仿真数据发布到 ROS 2，例如 `/clock`、TF、odometry、camera image。
 
@@ -301,23 +428,24 @@ Isaac Sim ROS 2 Bridge 需要在安装 Isaac Sim 时就安装好。它负责把�
 - `Load Vehicle` 是否能加载插件自带的 Iris。
 - Backend 是否选择 PX4。
 
-如果 PX4 路径不对，Pegasus UI 可能能打开，但后面加载无人机或启动 PX4 backend 会失败。
+如果 PX4 路径不正确，Pegasus UI 可能可以打开，但加载无人机或启动 PX4 backend 时会失败。
 
 ![Pegasus 插件界面和基础试飞入口](ph/微信图片_202606071537212.png)
 
 启动 QGC 的常见命令：
 
 ```bash
-~/Downloads/QGroundControl.AppImage
+cd ~/Downloads
+./QGroundControl*.AppImage
 ```
 
-QGC 连接后看到 `Ready To Fly`，说明 Pegasus、PX4、QGC 的基础链路已经通了。
+QGC 连接后显示 `Ready To Fly`，说明 Pegasus、PX4、QGC 的基础链路已连通。
 
 ### 04 加载官方 Iris 无人机
 
 Iris 是 PX4/Pegasus 常用的官方四旋翼示例机型。
 
-Iris 的资产和动力学参数已经配好，PX4 airframe 通常也匹配。Iris 能飞，说明 Pegasus、PX4、QGC、MAVLink 这条基础链路基本正常。
+Iris 的资产和动力学参数已经配置完成，PX4 airframe 通常也匹配。Iris 可正常飞行时，说明 Pegasus、PX4、QGC、MAVLink 基础链路基本正常。
 
 ![Pegasus 插件界面和基础试飞入口](assets/isaac_px4_training/pegasus_ui_basic_flight.png)
 
@@ -334,7 +462,7 @@ Iris 的资产和动力学参数已经配好，PX4 airframe 通常也匹配。Ir
 9. 确认 Ready To Fly。
 10. 使用 QGC 虚拟摇杆或手柄起飞、移动、降落。
 
-这条链路可以理解为：
+该链路关系如下：
 
 ![整体仿真链路](assets/isaac_px4_training/overall_sim_chain.png)
 
@@ -342,13 +470,13 @@ Pegasus 负责在 Isaac Sim 里加载无人机和 PX4 backend；PX4 负责飞控
 
 ### 05 QGC 连接检查与 Ready To Fly 判断
 
-进行代码控制时也建议打开 QGC。PX4 无法 arm、拒绝起飞、模式切换失败时，QGC 通常会直接显示原因。
+进行代码控制时也可打开 QGC。PX4 无法 arm、拒绝起飞、模式切换失败时，QGC 通常会显示原因。
 
-QGC 可以用虚拟摇杆，也可以接手柄。测试时按这个顺序看：
+QGC 可使用虚拟摇杆，也可以接入手柄。检查顺序如下：
 
-- 先确认 QGC 能连接 PX4。
-- 再确认摇杆输入映射正确。
-- 起飞前看有没有红色告警。
+- 确认 QGC 能连接 PX4。
+- 确认摇杆输入映射正确。
+- 起飞前检查是否存在红色告警。
 - PX4 未 Ready To Fly 时，不应强行 arm。
 
 ![QGroundControl 界面](assets/isaac_px4_training/qgc_overview.png)
@@ -371,7 +499,7 @@ Iris 手动试飞用于确认 Isaac Sim、Pegasus、PX4、QGC 之间的基础链
 
 ### 07 基础链路故障排查
 
-QGC 连接不上时，先查：
+QGC 无法连接时，按以下项目检查：
 
 ```text
 1. Pegasus 是否启动 PX4 backend
