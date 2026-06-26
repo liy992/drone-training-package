@@ -6,6 +6,7 @@
 - Isaac Sim `--exec` 导入脚本。
 - ROS 2 / PX4 Offboard 命令行控制菜单。
 - 独立货舱 USD 和控制脚本。
+- RTX LiDAR 点云、TF、Odom 和 EGO-Planner 避障教学链路。
 - 拆分后的中文技术说明文档和配套图片。
 
 支持的系统组合：
@@ -39,7 +40,8 @@ docs/02_实训系列二_Isaac_Sim_Pegasus_PX4_官方_Iris_试飞.md
 docs/03_实训系列三_PX4_Offboard_ROS2_代码控制.md
 docs/04_实训系列四_自定义无人机接入与比赛场景实战.md
 docs/05_实训系列五_货舱资产加载与控制.md
-docs/06_疑难杂症_QA.md
+docs/06_实训系列六_雷达点云与EGO_Planner避障.md
+docs/07_疑难杂症_QA.md
 ```
 
 ## 目录
@@ -55,11 +57,16 @@ docs/06_疑难杂症_QA.md
 ├── control/cargo_bay_control.py     # Cargo bay String command publisher
 ├── control/px4_offboard_menu.py     # ROS 2 / PX4 Offboard control menu
 ├── docs/                           # Technical Markdown and images
+├── isaac/ego_demo/                 # Isaac LiDAR + EGO scene entry
 ├── isaac/import_sunray150_with_px4.py
 ├── isaac/load_cargo_bay.py
+├── ros2_ws/src/ego_training_demo/  # EGO point cloud and PX4 bridge nodes
 ├── run_cargo_bay_control.sh
 ├── run_load_cargo_bay.sh
 ├── run_control_menu.sh
+├── run_ego_stage_04.sh
+├── run_ego_stage_05.sh
+├── run_ego_stage_06.sh
 └── run_import_asset.sh
 ```
 
@@ -216,12 +223,63 @@ move 0 0 -0.2    # 在当前目标点基础上下降约 0.2m
 
 `goto` 仍然使用 PX4 local / NED 绝对目标点。只有 `move` 做世界坐标 / ENU 到 PX4 local / NED 的相对位移转换。
 
-## 说明
+## EGO-Planner 雷达避障演示
+
+精简后的 EGO 教学链路保留三个入口：
+
+- Isaac 脚本：`isaac/ego_demo/`
+- ROS 2 教学包：`ros2_ws/src/ego_training_demo/`
+
+第一步，启动 Isaac 侧完整场景：
+
+```bash
+./run_ego_stage_04.sh
+```
+
+`run_ego_stage_04.sh` 是当前 Isaac 侧主入口。这个脚本会打开 Isaac Sim，加载无人机、三个障碍物、隐藏 RTX LiDAR，发布：
+
+```text
+/clock
+/training/lidar/pointcloud
+/tf
+/tf_static
+/drone_0_ego_odom
+```
+
+第二步，验证 EGO-Planner 是否能输出规划命令：
+
+```bash
+./run_ego_stage_05.sh
+```
+
+常用演示命令：
+
+```bash
+./run_ego_stage_05.sh send_default_goal:=true
+```
+
+第三步，接入 PX4 Offboard 闭环：
+
+```bash
+./run_ego_stage_06.sh
+```
+
+常用演示命令：
+
+```bash
+./run_ego_stage_06.sh send_default_goal:=true
+```
+
+说明文档：
+
+```text
+docs/06_实训系列六_雷达点云与EGO_Planner避障.md
+```
 
 - 控制脚本默认使用 `/usr/bin/python3`，避免 conda Python 和 ROS Python ABI 不匹配。
 - 已兼容带版本号的 PX4 输出话题：`/fmu/out/vehicle_local_position_v1` 和 `/fmu/out/vehicle_status_v3`。
 - 这个仓库只用于无人机仿真、资产导入和 ROS 2/PX4 控制验证。
-- 出现异常时可查看 `docs/06_疑难杂症_QA.md`。该文件为问题排查文档。
+- 出现异常时可查看 `docs/07_疑难杂症_QA.md`。该文件为问题排查文档。
 
 ## 独立货舱
 

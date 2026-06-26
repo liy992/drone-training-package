@@ -8,3 +8,6 @@ __pycache__/
 *.tmp
 .thumbs/
 *.last_generated
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
